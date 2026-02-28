@@ -1,9 +1,5 @@
 # TrialAgent dependencies
-# Core pipeline (run_pipeline) works with no external deps; langgraph is needed for build_langgraph_app().
-langgraph>=0.2.0
-
-# BioMCP CLI for trial search/fetch (biomcp search trial, biomcp get trial)
-biomcp-python>=0.7.0
-
-# LLM backend for parse/plan/critic nodes (optional; set config.llm_factory)
 langchain-openai>=0.2.0
+biomcp-python>=0.7.0
+langgraph>=0.2.0
+tqdm>=4.66.0

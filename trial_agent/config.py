@@ -14,25 +14,22 @@ def _dbg(msg: str) -> None:
 
 @dataclass(slots=True)
 class RuntimeConfig:
-    """Runtime configuration for the agent.
-
-    IMPORTANT: wire your LLM client in `llm_factory` before running graph execution.
-    """
+    """Runtime configuration for pipeline execution."""
 
     output_jsonl: Path = Path("artifacts/trials.jsonl")
     checkpoint_db: Path = Path("artifacts/langgraph_checkpoints.sqlite")
     cache_db: Path = Path("artifacts/trialagent_cache.sqlite")
-    default_target_k: int = 25
-    default_discovery_page_size: int = 250  # max results per tool per discover call (was 25)
-    max_discovery_attempts: int = 20  # raised to allow pagination (was 8)
-    max_pagination_pages: int = 5  # max additional pages per tool when nextPageToken returned
-    max_fetch_count: int = 250  # max candidates to fetch full records for (was 50; limits final trial count)
-    max_enrichment_count: int = 30
+    default_target_k: int = 100_000  # effectively unlimited: return as many trials as found
+    default_discovery_page_size: int = 100_000
+    max_discovery_attempts: int = 100_000
+    max_pagination_pages: int = 100
+    max_fetch_count: int = 100_000  # fetch all candidates
+    use_llm_react: bool = False
+    react_max_repair_loops: int = 2
+    react_normalize_batch_size: int = 30
     llm_factory: Callable[[], Any] | None = None
-    tool_order: list[str] | None = None  # override Plan default; None = use ["ctgov_v2", "biomcp", "who_ictrp"]
-    fetch_tool_order: list[str] = field(
-        default_factory=lambda: ["ctgov_v2", "biomcp"]  # prefer ClinicalTrials.gov for fetch, then biomcp
-    )
+    tool_order: list[str] | None = None
+    fetch_tool_order: list[str] = field(default_factory=lambda: ["ctgov_v2", "biomcp"])
     enabled_tools: set[str] = field(
         default_factory=lambda: {
             "biomcp",

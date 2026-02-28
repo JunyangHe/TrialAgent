@@ -22,7 +22,6 @@ class GraphState:
     candidate_set: dict[str, CandidateTrial] = field(default_factory=dict)
     raw_records: dict[str, dict[str, Any]] = field(default_factory=dict)
     trial_records: dict[str, TrialRecord] = field(default_factory=dict)
-    evidence_records: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     quality: QualityReport = field(default_factory=QualityReport)
     memory: dict[str, Any] = field(default_factory=dict)
     runtime: GraphRuntime = field(default_factory=GraphRuntime)
