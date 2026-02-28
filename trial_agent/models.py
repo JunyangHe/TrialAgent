@@ -14,7 +14,6 @@ class SearchSpec:
     statuses: list[str] = field(default_factory=list)
     geographies: list[str] = field(default_factory=list)
     must_have_fields: list[str] = field(default_factory=list)
-    include_evidence: bool = True
     target_k: int = 25
     unresolved_ambiguities: list[str] = field(default_factory=list)
     confidence: float = 0.0
@@ -29,7 +28,7 @@ class QueryAction:
 
 @dataclass(slots=True)
 class Plan:
-    tool_order: list[str] = field(default_factory=lambda: ["biomcp", "ctgov_v2", "who_ictrp"])
+    tool_order: list[str] = field(default_factory=lambda: ["ctgov_v2", "biomcp", "who_ictrp"])
     query_queue: list[QueryAction] = field(default_factory=list)
     ranking_policy: str = "relevance_then_recency"
     stop_conditions: dict[str, Any] = field(default_factory=dict)
@@ -61,6 +60,7 @@ class TrialRecord:
     primary_completion_date: str | None = None
     outcomes: dict[str, Any] = field(default_factory=dict)
     summary: str | None = None
+    locations: list[str] = field(default_factory=list)
     evidence_snippets: list[dict[str, Any]] = field(default_factory=list)
     provenance: dict[str, Any] = field(default_factory=dict)
     quality_flags: list[str] = field(default_factory=list)

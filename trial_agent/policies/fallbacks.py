@@ -26,20 +26,12 @@ def apply_missing_fields_fallback(state: GraphState) -> None:
     state.quality.notes.append("fallback_4_missing_fields_refetch_applied")
 
 
-def apply_evidence_fallback(state: GraphState) -> None:
-    state.quality.notes.append("fallback_5_registry_only_applied")
-    for record in state.trial_records.values():
-        if "no_trialstreamer_evidence" not in record.quality_flags:
-            record.quality_flags.append("no_trialstreamer_evidence")
-
-
 def build_default_fallback_policy() -> dict[str, str]:
     return {
         "low_yield": "fallback_1",
         "overbroad": "fallback_2",
         "ambiguity": "fallback_3",
         "missing_fields": "fallback_4",
-        "no_evidence": "fallback_5",
     }
 
 

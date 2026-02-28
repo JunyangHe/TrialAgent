@@ -8,9 +8,7 @@ Prototype framework for an AI-assisted clinical trial extraction agent using a R
 - Five tool adapters exposed in the framework (stubs ready for API wiring):
   - BioMCP
   - ClinicalTrials.gov API v2
-  - AACT
   - WHO ICTRP
-  - Trialstreamer
 - Graph state model with memory, query history, candidate set, raw records, normalized records, quality report, runtime budgets, and error log.
 - Fallback policy hooks implemented as deterministic replan/repair behaviors:
   1. low-yield fallback,
@@ -32,6 +30,14 @@ The project intentionally does **not** configure an LLM client yet.
 
 These are the planner/critic/normalizer roles intended for ReAct behavior.
 
+## Setup
+
+Install dependencies before running:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Run the prototype pipeline
 
 ```bash
@@ -42,9 +48,8 @@ This runs the deterministic skeleton pipeline and writes `artifacts/trials.jsonl
 
 ## LangGraph mode
 
-If you want an actual LangGraph app object:
+If you want an actual LangGraph app object (included in `requirements.txt`):
 
-- install optional dependency: `pip install .[graph]`
 - use `trial_agent.graph.build_langgraph_app(config)`
 
 If LangGraph is unavailable, `run_pipeline(...)` still works as a local deterministic fallback.
@@ -52,5 +57,4 @@ If LangGraph is unavailable, `run_pipeline(...)` still works as a local determin
 ## Notes
 
 - Tool adapters currently return empty payloads; wire each adapter to real endpoints next.
-- `Trialstreamer` is enrichment-only by design in this architecture.
 - Missing fields are preserved as null/empty and surfaced via `quality_flags`.
