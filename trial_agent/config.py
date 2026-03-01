@@ -19,11 +19,11 @@ class RuntimeConfig:
     output_jsonl: Path = Path("artifacts/trials.jsonl")
     checkpoint_db: Path = Path("artifacts/langgraph_checkpoints.sqlite")
     cache_db: Path = Path("artifacts/trialagent_cache.sqlite")
-    default_target_k: int = 100_000  # effectively unlimited: return as many trials as found
-    default_discovery_page_size: int = 100_000
-    max_discovery_attempts: int = 100_000
+    default_target_k: int = 1_000_000  # default to return as many trials as found
+    default_discovery_page_size: int = 1_000_000
+    max_discovery_attempts: int = 1_000_000
     max_pagination_pages: int = 100
-    max_fetch_count: int = 100_000  # fetch all candidates
+    max_fetch_count: int = 1_000_000  # fetch all candidates
     use_llm_react: bool = False
     react_max_repair_loops: int = 2
     react_normalize_batch_size: int = 30

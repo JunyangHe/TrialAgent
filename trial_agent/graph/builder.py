@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 from trial_agent.config import RuntimeConfig, _dbg
@@ -16,6 +17,36 @@ from trial_agent.tools.adapters import build_tool_registry
 
 def _load_tools(config: RuntimeConfig) -> dict[str, Any]:
     return {k: v for k, v in build_tool_registry().items() if k in config.enabled_tools}
+
+
+def _prompt_manual_retry_query(state: GraphState, config: RuntimeConfig) -> tuple[GraphState, bool]:
+    """Ask user for a revised query when manual discovery found zero candidates."""
+    if not sys.stdin or not sys.stdin.isatty():
+        state.quality.notes.append("manual_low_yield_non_interactive")
+        _dbg("manual low-yield: non-interactive stdin, skip user retry prompt")
+        return state, False
+
+    try:
+        revised_query = input(
+            "[TrialAgent] No trials found. Enter another or broader query (press Enter to stop): "
+        ).strip()
+    except (EOFError, KeyboardInterrupt):
+        state.quality.notes.append("manual_low_yield_user_prompt_cancelled")
+        return state, False
+
+    if not revised_query:
+        state.quality.notes.append("manual_low_yield_user_declined_retry")
+        return state, False
+
+    state.user_request = revised_query
+    state.memory.pop("abort", None)
+    state.plan.query_queue.clear()
+    state = nodes.parse_request(state, config)
+    if state.memory.get("abort"):
+        return state, False
+    state = nodes.plan_queries(state, config)
+    _dbg(f"manual low-yield: queued revised query={revised_query!r}, queue={len(state.plan.query_queue)}")
+    return state, bool(state.plan.query_queue)
 
 
 def run_pipeline_rule(user_request: str, config: RuntimeConfig, langgraph: bool = False) -> GraphState | dict[str, Any]:
@@ -42,6 +73,10 @@ def run_pipeline_rule(user_request: str, config: RuntimeConfig, langgraph: bool 
 
     for i in tqdm(range(config.max_discovery_attempts), desc="Discovery", unit="query"):
         if not state.plan.query_queue:
+            if not state.candidate_set:
+                state, queued_retry = _prompt_manual_retry_query(state, config)
+                if queued_retry:
+                    continue
             _dbg(f"discovery loop exit at iter {i}: query_queue empty")
             break
         state = nodes.act_discover(state, tools, config)

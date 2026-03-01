@@ -26,14 +26,52 @@ The pipeline writes normalized trial rows to `artifacts/trials.jsonl`.
 - Deterministic fallback hooks:
   1. low-yield
   2. overbroad
-  3. ambiguity
-  4. missing-fields
 
 ## Installation
 
 ```bash
 pip install -r requirements.txt
 ```
+
+## Ollama setup (local LLM)
+
+The CLI can use a local LLM via [Ollama](https://ollama.com) for parsing and ReAct. The default configuration in `trial_agent/main.py` points to `gpt-oss:20b` on `http://localhost:11434/v1`.
+
+1. **Install Ollama**:
+
+   - macOS (curl):
+     ```bash
+     curl -fsSL https://ollama.com/install.sh | sh
+     ```
+   - Windows (PowerShell):
+     ```powershell
+     irm https://ollama.com/install.ps1 | iex
+     ```
+
+   Then start the server:
+   ```bash
+   ollama serve
+   ```
+
+2. **Pull the model** (20B for typical machines; 120B if you have ≥60GB VRAM):
+
+   ```bash
+   ollama pull gpt-oss:20b
+   ```
+
+3. **Verify** Ollama is running and the model works:
+
+   ```bash
+   ollama run gpt-oss:20b "Hello"
+   ```
+
+   Or test the API:
+
+   ```bash
+   curl http://localhost:11434/v1/models
+   ```
+
+TrialAgent will call this local model for argument parser and when using `--llm true`.
 
 ## Usage
 
@@ -54,6 +92,12 @@ LangGraph mode (rule pipeline only):
 ```bash
 python -m trial_agent.main "EGFR mutant non-small cell lung cancer" --langgraph
 ```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--target K` | Target number of trials to retrieve (default: 100000). Use a smaller value (e.g. `--target 500`) for quicker runs. |
 
 ## Troubleshooting
 
@@ -84,6 +128,7 @@ Then run the agent again in the same shell.
 
 Main runtime knobs live in `trial_agent/config.py` (`RuntimeConfig`):
 
+- `default_target_k` — target number of trials (overridable via `--target K` on the CLI)
 - `enabled_tools`
 - `tool_order` / `fetch_tool_order`
 - `default_discovery_page_size`

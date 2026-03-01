@@ -33,10 +33,19 @@ def main() -> None:
         action="store_true",
         help="Run via LangGraph (state graph with conditional edges) instead of regular loop",
     )
+    parser.add_argument(
+        "--target",
+        type=int,
+        default=1_000_000,
+        metavar="K",
+        help="Target number of trials to retrieve (default: 1000000)",
+    )
     args = parser.parse_args()
 
     config = RuntimeConfig()
     config.use_llm_react = args.llm
+    if args.target is not None:
+        config.default_target_k = max(1, args.target)
 
     try:
         from langchain_openai import ChatOpenAI
@@ -70,6 +79,16 @@ def main() -> None:
     )
     if run_summary:
         print(f"Run summary: {run_summary}")
+    memory = state.get("memory", {}) if isinstance(state, dict) else state.memory
+    overbroad = memory.get("overbroad_warning") or memory.get("manual_overbroad_warning")
+    if isinstance(overbroad, dict):
+        threshold = overbroad.get("threshold")
+        candidates = overbroad.get("candidates")
+        print(
+            f"[TrialAgent] Warning: over-broad retrieval detected "
+            f"({candidates} candidates > target*4 threshold {threshold}). "
+            "Please narrow your query if you want more precise results."
+        )
 
 
 if __name__ == "__main__":

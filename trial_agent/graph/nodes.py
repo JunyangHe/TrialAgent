@@ -13,9 +13,7 @@ except ImportError:
 from trial_agent.io.jsonl_writer import write_trials_jsonl
 from trial_agent.models import CandidateTrial, Plan, QueryAction, QueryAttempt, SearchSpec, TrialRecord, ToolError
 from trial_agent.policies.fallbacks import (
-    apply_ambiguity_fallback,
     apply_low_yield_fallback,
-    apply_missing_fields_fallback,
     apply_overbroad_fallback,
     seed_plan_defaults,
 )
@@ -98,6 +96,14 @@ def _to_bool(value: object, default: bool = True) -> bool:
     if isinstance(value, str):
         return value.lower() in ("true", "yes", "1")
     return bool(value)
+
+
+def _set_overbroad_warning(state: GraphState, candidate_count: int) -> None:
+    threshold = state.target_k * 4
+    warning = {"threshold": threshold, "candidates": candidate_count}
+    state.memory["overbroad_warning"] = warning
+    # keep backwards-compatible key for existing consumers
+    state.memory["manual_overbroad_warning"] = warning
 
 
 def parse_request(state: GraphState, config: RuntimeConfig) -> GraphState:
@@ -201,8 +207,6 @@ def plan_queries_react(state: GraphState, config: RuntimeConfig) -> GraphState:
         "fallback_policy": {
             "low_yield": "fallback_1",
             "overbroad": "fallback_2",
-            "ambiguity": "fallback_3",
-            "missing_fields": "fallback_4",
         },
     }
     planner_prompt = (
@@ -327,12 +331,10 @@ def observe_discover(state: GraphState, config: RuntimeConfig) -> GraphState:
     candidate_count = len(state.candidate_set)
 
     if candidate_count == 0 and attempts >= 2:
-        apply_low_yield_fallback(state)
+        state.quality.notes.append("manual_low_yield_detected")
     elif candidate_count > state.target_k * 4:
+        _set_overbroad_warning(state, candidate_count)
         apply_overbroad_fallback(state)
-
-    if state.search_spec and state.search_spec.unresolved_ambiguities:
-        apply_ambiguity_fallback(state)
 
     return state
 
@@ -362,9 +364,11 @@ def observe_discover_react(state: GraphState, config: RuntimeConfig) -> GraphSta
     if fallback == "low_yield":
         apply_low_yield_fallback(state)
     elif fallback == "overbroad":
+        _set_overbroad_warning(state, candidate_count)
         apply_overbroad_fallback(state)
-    elif fallback == "ambiguity":
-        apply_ambiguity_fallback(state)
+    elif candidate_count > state.target_k * 4:
+        _set_overbroad_warning(state, candidate_count)
+        apply_overbroad_fallback(state)
 
     add_queries = payload.get("add_queries", [])
     if isinstance(add_queries, list):
@@ -534,9 +538,6 @@ def validate_records(state: GraphState) -> GraphState:
     state.quality.missingness_by_field = {k: v / total for k, v in missing.items()}
     state.quality.schema_completeness = 1 - (sum(missing.values()) / (total * len(required)))
 
-    if any(v > 0 for v in missing.values()):
-        apply_missing_fields_fallback(state)
-
     return state
 
 
@@ -629,6 +630,10 @@ def finalize_run(state: GraphState) -> GraphState:
         "sources_used": sources_used,
         "errors": len(state.errors),
     }
+    overbroad = state.memory.get("overbroad_warning") or state.memory.get("manual_overbroad_warning")
+    if isinstance(overbroad, dict):
+        state.memory["run_summary"]["overbroad_threshold"] = overbroad.get("threshold")
+        state.memory["run_summary"]["overbroad_candidates"] = overbroad.get("candidates")
     return state
 
 

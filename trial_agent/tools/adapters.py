@@ -37,7 +37,7 @@ class BioMCPAdapter(ToolAdapter):
     def discover(self, query: str, filters: dict[str, Any]) -> ToolResult:
         limit = 25
         try:
-            limit = min(int(filters.get("limit", 25)), 100_000)
+            limit = min(int(filters.get("limit", 25)), 1_000_000)
         except (TypeError, ValueError):
             pass
         args = [
@@ -99,10 +99,8 @@ class BioMCPAdapter(ToolAdapter):
         if not nct.startswith("NCT"):
             nct = f"NCT{nct}" if nct.isdigit() else trial_id
         args = [self.cmd, "trial", "get", nct, "-j"]
-        _dbg(f"biomcp fetch: args={args}")
         raw = self._run(args)
         row = self._extract_single_record(raw)
-        _dbg(f"biomcp fetch: raw keys={list(raw.keys()) if isinstance(raw, dict) else 'not-dict'}, extracted row={row is not None}")
         if row is None:
             return ToolResult(records=[], metadata={"trial_id": trial_id})
         return ToolResult(
@@ -328,7 +326,7 @@ class ClinicalTrialsGovV2Adapter(HTTPToolAdapter):
             page_size = int(filters.get("limit", 25))
         except (TypeError, ValueError):
             page_size = 25
-        page_size = max(1, min(page_size, 100_000))
+        page_size = max(1, min(page_size, 1_000_000))
 
         params = {"query.term": query, "pageSize": page_size, "format": "json"}
         if filters.get("pageToken"):
@@ -498,7 +496,7 @@ class WHOICTRPAdapter(HTTPToolAdapter):
         self._fallback_bases = [self.http.base_url, "https://apps.who.int/trialsearch"]
 
     def discover(self, query: str, filters: dict[str, Any]) -> ToolResult:
-        limit = self._bounded_limit(filters.get("limit", 25), upper=100_000)
+        limit = self._bounded_limit(filters.get("limit", 25), upper=1_000_000)
         query = (query or "").strip()
         geographies = filters.get("geographies")
         if geographies and isinstance(geographies, list) and geographies:
