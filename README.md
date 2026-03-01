@@ -5,28 +5,6 @@ Clinical trial search and normalization agent with two execution modes:
 - Rule-based pipeline (default): deterministic orchestration, LLM used only for request parsing.
 - LLM ReAct pipeline (`--llm true`): LLM-guided planning, critic, normalization/QC, and repair loops.
 
-The pipeline writes normalized trial rows to `artifacts/trials.jsonl`.
-
-## Implemented functionality
-
-- Graph state + node pipeline for:
-  - parse request
-  - plan queries
-  - discover candidates
-  - observe/critic loop
-  - fetch full records
-  - normalize records
-  - validate quality
-  - repair/replan (ReAct mode)
-  - finalize + JSONL export
-- Tool adapters currently wired and used:
-  - BioMCP (`biomcp`)
-  - ClinicalTrials.gov API v2 (`ctgov_v2`)
-  - WHO ICTRP (`who_ictrp`)
-- Deterministic fallback hooks:
-  1. low-yield
-  2. overbroad
-
 ## Installation
 
 ```bash
@@ -97,7 +75,9 @@ python -m trial_agent.main "EGFR mutant non-small cell lung cancer" --langgraph
 
 | Option | Description |
 |--------|-------------|
-| `--target K` | Target number of trials to retrieve (default: 100000). Use a smaller value (e.g. `--target 500`) for quicker runs. |
+| `--llm` | Enable full LLM ReAct pipeline. When false (default), only the parser uses the LLM; discovery and planning are rule-based. |
+| `--langgraph` | Run via LangGraph (state graph with conditional edges) instead of the regular loop. |
+| `--target K` | Target number of trials to retrieve (default: 1,000,000). Use a smaller value (e.g. `--target 500`) for quicker runs. |
 
 ## Troubleshooting
 
@@ -159,7 +139,7 @@ trial_agent/
 │   └── adapters.py      # ctgov_v2, biomcp, who_ictrp adapters
 ├── policies/
 │   ├── __init__.py
-│   └── fallbacks.py     # Low-yield, overbroad, ambiguity, missing-fields fallbacks
+│   └── fallbacks.py     # Low-yield, overbroad fallbacks
 └── io/
     ├── __init__.py
     └── jsonl_writer.py  # Write TrialRecords to JSONL
