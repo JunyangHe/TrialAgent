@@ -1,0 +1,6 @@
+on: workflow_dispatch
+jobs:
+  call:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JunyangHe/JunyangHe.github.io/.github/actions/poc-reusable-composite@master
