@@ -1,0 +1,6 @@
+name: PoC Composite
+runs: 
+  using: composite
+  steps: 
+    - run: echo "ran from private composite action"
+      shell: bash
